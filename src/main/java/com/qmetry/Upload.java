@@ -215,10 +215,10 @@ public class Upload {
 		getStatus.addHeader("scope", "default");
 		long start = System.currentTimeMillis(); //start time
 		long end = start + 10 * 60 * 1000; // 10 mins
-		JSONObject statusObj = null;
+
 		while (System.currentTimeMillis() < end) {
 			CloseableHttpResponse statusResponse = httpClient.execute(getStatus);
-			statusObj = getResponseObject(statusResponse.getEntity(), log);
+			JSONObject statusObj = getResponseObject(statusResponse.getEntity(), log);
 			if (statusObj.get("status").toString().equals("Completed") || statusObj.get("status").toString().equals("Failed")) {
 				log.info("Status Updated by RequestAgain Method ->->" + statusObj);
 				break;

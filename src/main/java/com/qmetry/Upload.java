@@ -206,6 +206,7 @@ public class Upload {
 			exit(0);
 		}
 		return statusObj.toString().replace("\\/", "/");
+
 	}
 	//Request called when Status is in queue
 	public static void RequestAgain(Log log, String automationkey, String url, JSONObject responsejson, CloseableHttpClient httpClient) throws IOException {
@@ -214,21 +215,19 @@ public class Upload {
 		getStatus.addHeader("scope", "default");
 		long start = System.currentTimeMillis(); //start time
 		long end = start + 10 * 60 * 1000; // 10 mins
+		JSONObject statusObj = null;
 		while (System.currentTimeMillis() < end) {
 			CloseableHttpResponse statusResponse = httpClient.execute(getStatus);
-			JSONObject statusObj = getResponseObject(statusResponse.getEntity(), log);
-			if (statusObj.get("status").toString().equals("Completed")|| statusObj.get("status").toString().equals("Failed")){
+			statusObj = getResponseObject(statusResponse.getEntity(), log);
+			if (statusObj.get("status").toString().equals("Completed") || statusObj.get("status").toString().equals("Failed")) {
 				log.info("Status Updated by RequestAgain Method ->->" + statusObj);
 				break;
 			}
-			else{
-				log.info("Status: ->"+statusObj);
-			}
 		}
-
 
 	}
 }
+
 
 
 

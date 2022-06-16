@@ -192,11 +192,6 @@ public class Upload {
 		int status = statusResponse.getStatusLine().getStatusCode();
 		JSONObject statusObj = getResponseObject(statusResponse.getEntity(), log);
 
-		if(statusObj.get("status").toString().equals("In Queue")){
-			log.info("Status :(In Queue)"+statusObj);
-			RequestAgain(log, automationkey, url, responsejson, httpClient);
-			exit(0);
-		}
 		if (status != 200) {
 			log.info("Couldn't get request details.");
 			log.info("Status Code : " + status);
@@ -204,6 +199,11 @@ public class Upload {
 		}
 		if (statusObj.get("status").toString().equals("In Progress")) {
 			return getRequeststatus(log, automationkey, url, responsejson, httpClient);
+		}
+		if(statusObj.get("status").toString().equals("In Queue")){
+			log.info("Status :(In Queue)"+statusObj);
+			RequestAgain(log, automationkey, url, responsejson, httpClient);
+			exit(0);
 		}
 		return statusObj.toString().replace("\\/", "/");
 	}
@@ -217,11 +217,16 @@ public class Upload {
 		while (System.currentTimeMillis() < end) {
 			CloseableHttpResponse statusResponse = httpClient.execute(getStatus);
 			JSONObject statusObj = getResponseObject(statusResponse.getEntity(), log);
-			if (statusObj.get("status").toString().equals("Completed")){
+			if (statusObj.get("status").toString().equals("Completed")|| statusObj.get("status").toString().equals("Failed")){
 				log.info("Status Updated by RequestAgain Method ->->" + statusObj);
 				break;
 			}
+			else{
+				log.info("Status: ->"+statusObj);
+			}
 		}
+
+
 	}
 }
 

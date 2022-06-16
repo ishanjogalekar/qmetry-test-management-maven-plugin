@@ -27,6 +27,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import static java.lang.System.exit;
+
 public class Upload {
 	public static List<String> fetchFiles(String filepath, String format) throws FileNotFoundException {
 		String extention;
@@ -59,7 +61,7 @@ public class Upload {
 
 	public static String uploadfile(String url, String automationkey, String filepath, String format, String automationHierarchy,
 									String testsuitekey, String testsuiteName, String tsFolderPath, String platform, String cycle, String project, String release, String build,
-									String testsuiteFields, String testcaseFields, String skipWarning, String isMatchingRequired, Log log) throws IOException, ParseException {
+									String testsuiteFields, String testcaseFields, String skipWarning, String isMatchingRequired, Log log) throws Exception {
 		String res;
 
 		CloseableHttpClient httpClient = HttpClients.createDefault();
@@ -181,52 +183,47 @@ public class Upload {
 		return null;
 	}
 
-	public static String getRequeststatus(Log log, String automationkey, String url, JSONObject responsejson, CloseableHttpClient httpClient) throws IOException {
+	public static String getRequeststatus(Log log, String automationkey, String url, JSONObject responsejson, CloseableHttpClient httpClient) throws Exception {
 
 		HttpGet getStatus = new HttpGet(url + "/rest/admin/status/automation/" + responsejson.get("requestId"));
 		getStatus.addHeader("apiKey", automationkey);
 		getStatus.addHeader("scope", "default");
-		String url1 = url + "/rest/admin/status/automation/" + responsejson.get("requestId");
 		CloseableHttpResponse statusResponse = httpClient.execute(getStatus);
 		int status = statusResponse.getStatusLine().getStatusCode();
 		JSONObject statusObj = getResponseObject(statusResponse.getEntity(), log);
 
-
-		if (statusObj.get("status").toString().equals("In Queue")) {
-			long start = System.currentTimeMillis(); //start time
-			long end = start + 10 * 60 * 1000; // 10 mins
-			while (System.currentTimeMillis() < end) {
-				RequestAPICall(log, automationkey,url1);
-			}
+		if(statusObj.get("status").toString().equals("In Queue")){
+			log.info("Status :(In Queue)"+statusObj);
+			RequestAgain(log, automationkey, url, responsejson, httpClient);
+			exit(0);
 		}
 		if (status != 200) {
 			log.info("Couldn't get request details.");
 			log.info("Status Code : " + status);
 			return responsejson.toString().replace("\\/", "/");
-		} else if (statusObj.get("status").toString().equals("In Progress")) {
+		}
+		if (statusObj.get("status").toString().equals("In Progress")) {
 			return getRequeststatus(log, automationkey, url, responsejson, httpClient);
 		}
-		else {
-			return statusObj.toString().replace("\\/", "/");
-		}
+		return statusObj.toString().replace("\\/", "/");
 	}
-	//Method run for 10 mins
-	public static void RequestAPICall(Log log, String automationkey, String url) throws IOException {
-		URL urli = new URL(url);
-		HttpURLConnection con = (HttpURLConnection) urli.openConnection();
-		con.setRequestMethod("GET");
-		con.setRequestProperty("scope", "default");
-		con.setRequestProperty("apiKey",automationkey);
-		con.setDoOutput(true);
-		try (BufferedReader br = new BufferedReader(
-				new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
-			StringBuilder response = new StringBuilder();
-			String responseLine;
-			while ((responseLine = br.readLine()) != null) {
-				response.append(responseLine.trim());
+	//Request called when Status is in queue
+	public static void RequestAgain(Log log, String automationkey, String url, JSONObject responsejson, CloseableHttpClient httpClient) throws IOException {
+		HttpGet getStatus = new HttpGet(url + "/rest/admin/status/automation/" + responsejson.get("requestId"));
+		getStatus.addHeader("apiKey", automationkey);
+		getStatus.addHeader("scope", "default");
+		long start = System.currentTimeMillis(); //start time
+		long end = start + 10 * 60 * 1000; // 10 mins
+		while (System.currentTimeMillis() < end) {
+			CloseableHttpResponse statusResponse = httpClient.execute(getStatus);
+			JSONObject statusObj = getResponseObject(statusResponse.getEntity(), log);
+			if (statusObj.get("status").toString().equals("Completed")){
+				log.info("Status Updated by RequestAgain Method ->->" + statusObj);
+				break;
 			}
-			log.info("Response-->"+response);
 		}
 	}
 }
+
+
 

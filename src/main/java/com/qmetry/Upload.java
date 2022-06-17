@@ -199,7 +199,7 @@ public class Upload {
 		}
 		//If status is in Queue call API for 10 mins
 		if(statusObj.get("status").toString().equals("In Queue")){
-			log.info("Status :(In Queue)"+statusObj);
+			log.info("Response-->"+statusObj.toString().replace("\\/", "/"));
 			//Calling RequestAgain method
 			RequestAgain(log, automationkey, url, responsejson, httpClient);
 			//Exit after successful build
@@ -224,9 +224,12 @@ public class Upload {
 			CloseableHttpResponse statusResponse = httpClient.execute(getStatus);
 			//Get status Object
 			JSONObject statusObj = getResponseObject(statusResponse.getEntity(), log);
+			if(statusObj.get("status").toString().equals("In Progress")) {
+				log.info("Response-->" + statusObj.toString().replace("\\/", "/"));
+			}
 			//Stop loop if status is Completed or Failed and exit
 			if (statusObj.get("status").toString().equals("Completed") || statusObj.get("status").toString().equals("Failed")) {
-				log.info("Status Updated by RequestAgain Method ->->" + statusObj);
+				log.info("Response-->" + statusObj.toString().replace("\\/", "/"));
 				break;
 			}
 		}

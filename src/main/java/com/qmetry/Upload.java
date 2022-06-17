@@ -226,6 +226,7 @@ public class Upload {
 			JSONObject statusObj = getResponseObject(statusResponse.getEntity(), log);
 			if(statusObj.get("status").toString().equals("In Progress")) {
 				log.info("Response-->" + statusObj.toString().replace("\\/", "/"));
+				continue;
 			}
 			//Stop loop if status is Completed or Failed and exit
 			if (statusObj.get("status").toString().equals("Completed") || statusObj.get("status").toString().equals("Failed")) {

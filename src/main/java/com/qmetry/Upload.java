@@ -1,5 +1,6 @@
 package com.qmetry;
 
+//Java in-built libs
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -7,12 +8,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import static java.lang.System.exit;
 
+//Apache and json libs
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -25,9 +26,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.maven.plugin.logging.Log;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
-import static java.lang.System.exit;
 
 public class Upload {
 	public static List<String> fetchFiles(String filepath, String format) throws FileNotFoundException {
@@ -38,7 +36,6 @@ public class Upload {
 			extention = ".json";
 		else
 			return null;
-
 		List<String> list = new ArrayList<String>();
 		File file = new File(filepath);
 		if (!file.exists()) {
@@ -200,25 +197,34 @@ public class Upload {
 		if (statusObj.get("status").toString().equals("In Progress")) {
 			return getRequeststatus(log, automationkey, url, responsejson, httpClient);
 		}
+		//If status is in Queue call API for 10 mins
 		if(statusObj.get("status").toString().equals("In Queue")){
 			log.info("Status :(In Queue)"+statusObj);
+			//Calling RequestAgain method
 			RequestAgain(log, automationkey, url, responsejson, httpClient);
+			//Exit after successful build
 			exit(0);
 		}
 		return statusObj.toString().replace("\\/", "/");
-
 	}
+
 	//Request called when Status is in queue
 	public static void RequestAgain(Log log, String automationkey, String url, JSONObject responsejson, CloseableHttpClient httpClient) throws IOException {
+		//Http Get API call
 		HttpGet getStatus = new HttpGet(url + "/rest/admin/status/automation/" + responsejson.get("requestId"));
 		getStatus.addHeader("apiKey", automationkey);
 		getStatus.addHeader("scope", "default");
+		//Timer function for all API 10 mins
 		long start = System.currentTimeMillis(); //start time
-		long end = start + 10 * 60 * 1000; // 10 mins
+		long end = start + 10 * 60 * 1000; // 10 mins (60*1000 = 1 min | 1*10 = 10 mins)
 
+		//Loop to start timer
 		while (System.currentTimeMillis() < end) {
+			//Executing API
 			CloseableHttpResponse statusResponse = httpClient.execute(getStatus);
+			//Get status Object
 			JSONObject statusObj = getResponseObject(statusResponse.getEntity(), log);
+			//Stop loop if status is Completed or Failed and exit
 			if (statusObj.get("status").toString().equals("Completed") || statusObj.get("status").toString().equals("Failed")) {
 				log.info("Status Updated by RequestAgain Method ->->" + statusObj);
 				break;
